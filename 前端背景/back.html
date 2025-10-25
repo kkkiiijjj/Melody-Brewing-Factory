@@ -217,35 +217,6 @@
             100% { opacity: 0; }
         }
         
-        /* 排序算法 */
-        .sorting-algorithm {
-            position: absolute;
-            bottom: 10%;
-            left: 10%;
-            width: 350px;
-            height: 200px;
-            opacity: 0;
-            transition: opacity 2s ease-in-out;
-        }
-        
-        .sort-bar {
-            position: absolute;
-            bottom: 0;
-            background: linear-gradient(to top, #00ffff, #0080ff);
-            border-radius: 2px 2px 0 0;
-            box-shadow: 0 0 8px #00ffff;
-            transition: all 0.3s ease;
-        }
-        
-        .sort-bar.comparing {
-            background: linear-gradient(to top, #ffff00, #ff8000);
-            box-shadow: 0 0 12px #ffff00;
-        }
-        
-        .sort-bar.sorted {
-            background: linear-gradient(to top, #00ff00, #00ff80);
-            box-shadow: 0 0 10px #00ff00;
-        }
         
         /* 线性回归 */
         .linear-regression {
@@ -971,7 +942,6 @@
                 <!-- 神经网络 -->
                 <div class="neural-network" id="neuralNetwork"></div>
                 <!-- 排序算法 -->
-                <div class="sorting-algorithm" id="sortingAlgorithm"></div>
                 <!-- 线性回归 -->
                 <div class="linear-regression" id="linearRegression"></div>
                 <!-- 聚类算法 -->
@@ -1582,56 +1552,56 @@
                 });
             }
             
-            // 主更新函数
-            function updateWaves() {
-                try {
-                    // 每次更新时重新获取音浪条，确保不会因为元素被清理而停止
-                    const waveBars = document.querySelectorAll('.wave-bar');
-                    
-                    // 如果没有音浪条，尝试重新初始化
-                    if (waveBars.length === 0) {
-                        console.log('音浪条丢失，重新初始化...');
-                        initializeAudioWaves();
-                        // 继续执行，不返回，确保音浪能够重新启动
-                    }
-                    
-                    // 如果音浪条数量不足，也重新初始化
-                    if (waveBars.length < 20) {
-                        console.log('音浪条数量不足，重新初始化...');
-                        initializeAudioWaves();
-                    }
-                    
-                    modeTimer += 50; // 每50ms更新一次
-                    
-                    // 检查是否需要切换模式
-                    if (modeTimer >= modeDuration) {
-                        currentMode = (currentMode + 1) % modes.length;
-                        modeTimer = 0;
-                        console.log('切换到音浪模式:', modes[currentMode]);
-                    }
-                    
-                    // 根据当前模式执行相应的效果
-                    switch (modes[currentMode]) {
-                        case 'wave':
-                            createWave();
-                            break;
-                        case 'centerSpread':
-                            createCenterSpread();
-                            break;
-                        case 'heart':
-                            createHeart();
-                            break;
-                        case 'spiral':
-                            createSpiral();
-                            break;
-                        case 'random':
-                            createRandom();
-                            break;
-                    }
-                } catch (error) {
-                    console.error('音浪更新出错:', error);
+        // 主更新函数
+        function updateWaves() {
+            try {
+                // 每次更新时重新获取音浪条，确保不会因为元素被清理而停止
+                const waveBars = document.querySelectorAll('.wave-bar');
+                
+                // 如果没有音浪条，尝试重新初始化
+                if (waveBars.length === 0) {
+                    console.log('音浪条丢失，重新初始化...');
+                    initializeAudioWaves();
+                    // 继续执行，不返回，确保音浪能够重新启动
                 }
+                
+                // 如果音浪条数量不足，也重新初始化
+                if (waveBars.length < 20) {
+                    console.log('音浪条数量不足，重新初始化...');
+                    initializeAudioWaves();
+                }
+                
+                modeTimer += 50; // 每50ms更新一次
+                
+                // 检查是否需要切换模式
+                if (modeTimer >= modeDuration) {
+                    currentMode = (currentMode + 1) % modes.length;
+                    modeTimer = 0;
+                    console.log('切换到音浪模式:', modes[currentMode]);
+                }
+                
+                // 根据当前模式执行相应的效果
+                switch (modes[currentMode]) {
+                    case 'wave':
+                        createWave();
+                        break;
+                    case 'centerSpread':
+                        createCenterSpread();
+                        break;
+                    case 'heart':
+                        createHeart();
+                        break;
+                    case 'spiral':
+                        createSpiral();
+                        break;
+                    case 'random':
+                        createRandom();
+                        break;
+                }
+            } catch (error) {
+                console.error('音浪更新出错:', error);
             }
+        }
         
         // 动态音浪效果 - 多种模式自动切换
         function startDynamicWaves() {
@@ -1647,7 +1617,7 @@
         
         // 算法可视化全局变量
         let currentAlgorithm = 0;
-        const algorithms = ['recursiveTree', 'neuralNetwork', 'sortingAlgorithm', 'linearRegression', 'clustering'];
+        const algorithms = ['recursiveTree', 'neuralNetwork', 'linearRegression', 'clustering'];
         let algorithmTimer = 0;
         const algorithmDuration = 10000; // 每个算法显示10秒
         let algorithmInterval = null; // 算法定时器
@@ -1750,75 +1720,6 @@
                 }
             }
             
-            // 排序算法可视化
-            function createSortingAlgorithm() {
-                const container = document.getElementById('sortingAlgorithm');
-                container.innerHTML = ''; // 确保完全清空
-                
-                // 强制清理所有可能的条形图元素
-                const existingBars = document.querySelectorAll('.sort-bar');
-                existingBars.forEach(bar => bar.remove());
-                
-                const barCount = 20;
-                const barWidth = 15;
-                const maxHeight = 150;
-                let bars = [];
-                
-                // 创建初始数据
-                for (let i = 0; i < barCount; i++) {
-                    bars.push(Math.random() * maxHeight + 20);
-                }
-                
-                // 创建条形图
-                function renderBars() {
-                    container.innerHTML = ''; // 每次渲染前清空
-                    bars.forEach((height, index) => {
-                        const bar = document.createElement('div');
-                        bar.className = 'sort-bar';
-                        bar.style.left = (index * (barWidth + 2)) + 'px';
-                        bar.style.width = barWidth + 'px';
-                        bar.style.height = height + 'px';
-                        container.appendChild(bar);
-                    });
-                }
-                
-                // 冒泡排序动画
-                async function bubbleSort() {
-                    const n = bars.length;
-                    for (let i = 0; i < n - 1; i++) {
-                        for (let j = 0; j < n - i - 1; j++) {
-                            // 高亮比较的元素
-                            const bars_elements = container.querySelectorAll('.sort-bar');
-                            if (bars_elements[j] && bars_elements[j + 1]) {
-                                bars_elements[j].classList.add('comparing');
-                                bars_elements[j + 1].classList.add('comparing');
-                                
-                                await new Promise(resolve => setTimeout(resolve, 100));
-                                
-                                if (bars[j] > bars[j + 1]) {
-                                    // 交换元素
-                                    [bars[j], bars[j + 1]] = [bars[j + 1], bars[j]];
-                                    renderBars();
-                                    await new Promise(resolve => setTimeout(resolve, 200));
-                                }
-                                
-                                // 移除高亮
-                                bars_elements[j].classList.remove('comparing');
-                                bars_elements[j + 1].classList.remove('comparing');
-                            }
-                        }
-                        
-                        // 标记已排序的元素
-                        const bars_elements = container.querySelectorAll('.sort-bar');
-                        if (bars_elements[n - 1 - i]) {
-                            bars_elements[n - 1 - i].classList.add('sorted');
-                        }
-                    }
-                }
-                
-                renderBars();
-                bubbleSort();
-            }
             
             // 线性回归可视化
             function createLinearRegression() {
@@ -1988,9 +1889,6 @@
                             break;
                         case 'neuralNetwork':
                             createNeuralNetwork();
-                            break;
-                        case 'sortingAlgorithm':
-                            createSortingAlgorithm();
                             break;
                         case 'linearRegression':
                             createLinearRegression();
