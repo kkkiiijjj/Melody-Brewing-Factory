@@ -264,36 +264,39 @@
         /* 对话系统样式 */
         .dialogue-container {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 70px;
+            left: 700px;
             z-index: 50;
             pointer-events: auto;
+            max-height: 200px;
         }
         
         .dialogue-bubble {
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #00ffff;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 15px;
+            border-radius: 15px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
             color: #fff;
             font-family: 'Courier New', monospace;
-            font-size: 16px;
-            line-height: 1.6;
+            font-size: 14px;
+            line-height: 1.4;
             box-shadow: 
-                0 0 20px rgba(0, 255, 255, 0.5),
-                inset 0 0 10px rgba(0, 255, 255, 0.1);
+                0 0 15px rgba(0, 255, 255, 0.5),
+                inset 0 0 8px rgba(0, 255, 255, 0.1);
             animation: bubbleGlow 2s ease-in-out infinite alternate;
-            max-width: 80%;
+            max-width: 60%;
+            word-wrap: break-word;
         }
         
         .dialogue-bubble.stella {
             margin-left: 0;
+            margin-right: auto;
             border-color: #ff00ff;
             box-shadow: 
-                0 0 20px rgba(255, 0, 255, 0.5),
-                inset 0 0 10px rgba(255, 0, 255, 0.1);
+                0 0 15px rgba(255, 0, 255, 0.5),
+                inset 0 0 8px rgba(255, 0, 255, 0.1);
+            max-width: 50%;
         }
         
         .dialogue-bubble.user {
@@ -333,14 +336,14 @@
             background: linear-gradient(45deg, #00ffff, #0088ff);
             border: 2px solid #00ffff;
             color: #000;
-            padding: 12px 20px;
-            border-radius: 25px;
+            padding: 8px 16px;
+            border-radius: 20px;
             cursor: pointer;
             font-family: 'Courier New', monospace;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
             transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
         
         .choice-btn:hover {
@@ -392,6 +395,28 @@
         
         .hidden {
             display: none;
+        }
+        
+        .click-to-continue {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #00ffff;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            animation: clickPulse 1.5s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .dialogue-bubble {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        @keyframes clickPulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
         }
         
         .bar-counter {
@@ -484,8 +509,8 @@
         <!-- 对话系统 -->
         <div class="dialogue-container" id="dialogueContainer">
             <!-- 对话内容将通过JavaScript动态生成 -->
-        </div>
-        
+    </div>
+    
         <!-- 边框层 - 最顶层 -->
         <div class="border-overlay"></div>
     </div>
@@ -866,6 +891,8 @@
                     style: null,
                     mbti: null
                 };
+                this.dialogueQueue = [];
+                this.isWaitingForClick = false;
                 this.init();
             }
             
@@ -874,19 +901,58 @@
             }
             
             showWelcome() {
-                this.addBubble('stella', 'Stella', '晚上好，一位新客人。欢迎来到「旋律酿造厂」，一个能用声音调制鸡尾酒的地方。我是这里的调酒师，Stella。看起来，您想尝试一杯特调的"声音鸡尾酒"？');
-                this.addChoiceButtons(['开始调制', '了解更多']);
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '晚上好，一位新客人。欢迎来到「旋律酿造厂」，一个能用声音调制鸡尾酒的地方。我是这里的调酒师，Stella。看起来，您想尝试一杯特调的"声音鸡尾酒"？', showClick: true },
+                    { action: 'choices', choices: ['开始调制', '了解更多'] }
+                ];
+                this.processNextDialogue();
             }
             
-            addBubble(speaker, name, text) {
+            processNextDialogue() {
+                if (this.dialogueQueue.length === 0) return;
+                
+                const next = this.dialogueQueue.shift();
+                
+                if (next.action === 'choices') {
+                    this.addChoiceButtons(next.choices);
+                } else if (next.action === 'recording') {
+                    this.addRecordingButton();
+                } else if (next.action === 'next_step') {
+                    this[next.step]();
+                } else {
+                    this.addBubble(next.speaker, next.name, next.text, next.showClick);
+                }
+            }
+            
+            addBubble(speaker, name, text, showClickHint = true) {
+                // 清除之前的对话气泡
+                this.clearBubbles();
+                
                 const bubble = document.createElement('div');
                 bubble.className = `dialogue-bubble ${speaker}`;
                 bubble.innerHTML = `
                     <div class="speaker-name ${speaker}">${name}</div>
                     <div>${text}</div>
+                    ${showClickHint ? '<div class="click-to-continue">点击继续...</div>' : ''}
                 `;
+                
+                // 添加点击事件
+                if (showClickHint) {
+                    bubble.addEventListener('click', () => {
+                        this.handleBubbleClick();
+                    });
+                }
+                
                 this.container.appendChild(bubble);
                 this.scrollToBottom();
+                this.isWaitingForClick = showClickHint;
+            }
+            
+            handleBubbleClick() {
+                if (this.isWaitingForClick) {
+                    this.isWaitingForClick = false;
+                    this.processNextDialogue();
+                }
             }
             
             addChoiceButtons(choices) {
@@ -937,6 +1003,38 @@
                         this.userChoices.style = choice;
                         this.step3_Personality();
                         break;
+                    case 'I型（内向）':
+                        this.userChoices.mbti = 'I';
+                        this.askMBTI_N();
+                        break;
+                    case 'E型（外向）':
+                        this.userChoices.mbti = 'E';
+                        this.askMBTI_N();
+                        break;
+                    case 'N型（直觉）':
+                        this.userChoices.mbti += 'N';
+                        this.askMBTI_F();
+                        break;
+                    case 'S型（感觉）':
+                        this.userChoices.mbti += 'S';
+                        this.askMBTI_F();
+                        break;
+                    case 'F型（情感）':
+                        this.userChoices.mbti += 'F';
+                        this.askMBTI_J();
+                        break;
+                    case 'T型（思考）':
+                        this.userChoices.mbti += 'T';
+                        this.askMBTI_J();
+                        break;
+                    case 'J型（判断）':
+                        this.userChoices.mbti += 'J';
+                        this.finalStep();
+                        break;
+                    case 'P型（感知）':
+                        this.userChoices.mbti += 'P';
+                        this.finalStep();
+                        break;
                     case '开始录制':
                         this.startRecording();
                         break;
@@ -944,11 +1042,12 @@
             }
             
             step1_BaseMelody() {
-                this.addBubble('stella', 'Stella', '太好了。我的工作，就是将您带来的独特"原料"，融合成一杯只属于您的音乐。那么，我们开始吧？首先，我需要您提供三种核心的"基酒"和"风味"。');
-                setTimeout(() => {
-                    this.addBubble('stella', 'Stella', '每一杯经典的鸡尾酒，都离不开一份优质的"基酒"。请您为我"哼唱"一段旋律吧，无论是一段熟悉的副歌，还是您脑海中突然闪过的灵感片段都可以。它将是这杯音乐最原始的底色。');
-                    this.addRecordingButton();
-                }, 2000);
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '太好了。我的工作，就是将您带来的独特"原料"，融合成一杯只属于您的音乐。那么，我们开始吧？首先，我需要您提供三种核心的"基酒"和"风味"。', showClick: true },
+                    { speaker: 'stella', name: 'Stella', text: '每一杯经典的鸡尾酒，都离不开一份优质的"基酒"。请您为我"哼唱"一段旋律吧，无论是一段熟悉的副歌，还是您脑海中突然闪过的灵感片段都可以。它将是这杯音乐最原始的底色。', showClick: true },
+                    { action: 'recording' }
+                ];
+                this.processNextDialogue();
             }
             
             startRecording() {
@@ -969,32 +1068,57 @@
             }
             
             step1_Complete() {
-                const adjectives = ['灵动', '深情', '充满力量', '优雅', '活泼', '神秘', '温暖', '激昂'];
-                const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                // 清除录制按钮
+                this.clearChoices();
                 
-                this.addBubble('stella', 'Stella', `（做出侧耳倾听，然后若有所思的表情）嗯……我收到了。一段非常${randomAdj}的旋律。很好的开端，这瓶"基酒"潜力无穷。`);
-                setTimeout(() => {
-                    this.step2_Style();
-                }, 2000);
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '嗯……我收到了，一段非常灵动的旋律。很好的开端，这瓶"基酒"潜力无穷。', showClick: true },
+                    { speaker: 'stella', name: 'Stella', text: '基酒已备，接下来是决定风味的时候了。您希望您的这杯音乐，是哪种"口感"呢？', showClick: true },
+                    { action: 'next_step', step: 'step2_Style' }
+                ];
+                this.processNextDialogue();
             }
             
             step2_Style() {
-                this.addBubble('stella', 'Stella', '基酒已备，接下来是决定风味的时候了。您希望您的这杯音乐，是哪种"口感"呢？');
-                setTimeout(() => {
-                    this.addBubble('stella', 'Stella', '是想来点爵士的微醺与暧昧，像一杯Old Fashioned？还是电子音乐的冰凉与炸裂，如同一杯Mojito？或者，您偏爱古典的醇厚与复杂，像一杯层次丰富的Manhattan？请告诉我您的选择。');
-                    this.addChoiceButtons(['爵士', '电子', '古典', '流行', 'Lo-fi', '摇滚']);
-                }, 2000);
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '是想来点爵士的微醺与暧昧，像一杯Old Fashioned？还是电子音乐的冰凉与炸裂，如同一杯Mojito？或者，您偏爱古典的醇厚与复杂，像一杯层次丰富的Manhattan？请告诉我您的选择。', showClick: true },
+                    { action: 'choices', choices: ['爵士', '电子', '古典', '流行', 'Lo-fi', '摇滚'] }
+                ];
+                this.processNextDialogue();
             }
             
             step3_Personality() {
-                this.addBubble('stella', 'Stella', `明智之选。${this.userChoices.style}的风味，总能带来意想不到的惊喜。我已经能想象它和您的旋律融合后的样子了。`);
-                setTimeout(() => {
-                    this.addBubble('stella', 'Stella', '最后，也是我最引以为傲的环节——注入一丝您的个人色彩。这就像鸡尾酒里那滴神秘的"苦精"，看似微不足道，却能让整杯酒拥有独一无二的灵魂。');
-                    setTimeout(() => {
-                        this.addBubble('stella', 'Stella', '如果不介意，可以告诉我您的MBTI人格类型吗？比如，您是更偏向于从独处中获取能量的I型，还是热爱与人交流的E型？这能帮助我调整这首音乐的"气场"，是更适合一个人静静品味，还是能点燃整个派对的氛围。');
-                        this.addMBTIChoices();
-                    }, 2000);
-                }, 2000);
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: `明智之选。${this.userChoices.style}的风味，总能带来意想不到的惊喜。我已经能想象它和您的旋律融合后的样子了。`, showClick: true },
+                    { speaker: 'stella', name: 'Stella', text: '最后，也是我最引以为傲的环节——注入一丝您的个人色彩。这就像鸡尾酒里那滴神秘的"苦精"，看似微不足道，却能让整杯酒拥有独一无二的灵魂。', showClick: true },
+                    { speaker: 'stella', name: 'Stella', text: '您是i人还是e人？', showClick: true },
+                    { action: 'choices', choices: ['I型（内向）', 'E型（外向）'] }
+                ];
+                this.processNextDialogue();
+            }
+            
+            askMBTI_N() {
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '您是n人还是s人？', showClick: true },
+                    { action: 'choices', choices: ['N型（直觉）', 'S型（感觉）'] }
+                ];
+                this.processNextDialogue();
+            }
+            
+            askMBTI_F() {
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '您是f人还是t人？', showClick: true },
+                    { action: 'choices', choices: ['F型（情感）', 'T型（思考）'] }
+                ];
+                this.processNextDialogue();
+            }
+            
+            askMBTI_J() {
+                this.dialogueQueue = [
+                    { speaker: 'stella', name: 'Stella', text: '您是j人还是p人？', showClick: true },
+                    { action: 'choices', choices: ['J型（判断）', 'P型（感知）'] }
+                ];
+                this.processNextDialogue();
             }
             
             addMBTIChoices() {
@@ -1076,6 +1200,11 @@
                     this.addBubble('stella', 'Stella', '请戴上耳机，细细品味。希望这杯由您亲自参与酿造的声音，能带给您一段美妙的时光。如果喜欢，随时可以回来，我们再换一种配方。');
                     this.addChoiceButtons(['重新调制', '结束对话']);
                 }, 2000);
+            }
+            
+            clearBubbles() {
+                const bubbles = this.container.querySelectorAll('.dialogue-bubble');
+                bubbles.forEach(bubble => bubble.remove());
             }
             
             clearChoices() {
