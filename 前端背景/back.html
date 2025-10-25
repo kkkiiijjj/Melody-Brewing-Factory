@@ -1138,34 +1138,29 @@
                 this.dialogueQueue = [
                     { speaker: 'stella', name: 'Stella', text: `明智之选。${this.userChoices.style}的风味，总能带来意想不到的惊喜。我已经能想象它和您的旋律融合后的样子了。`, showClick: true },
                     { speaker: 'stella', name: 'Stella', text: '最后，也是我最引以为傲的环节——注入一丝您的个人色彩。这就像鸡尾酒里那滴神秘的"苦精"，看似微不足道，却能让整杯酒拥有独一无二的灵魂。', showClick: true },
-                    { speaker: 'stella', name: 'Stella', text: '您是i人还是e人？', showClick: true },
-                    { action: 'choices', choices: ['I型（内向）', 'E型（外向）'] }
+                    { action: 'next_step', step: 'askMBTI_I' }
                 ];
                 this.processNextDialogue();
+            }
+            
+            askMBTI_I() {
+                this.addBubble('stella', 'Stella', '您是i人还是e人？', false);
+                this.addChoiceButtons(['I型（内向）', 'E型（外向）']);
             }
             
             askMBTI_N() {
-                this.dialogueQueue = [
-                    { speaker: 'stella', name: 'Stella', text: '您是n人还是s人？', showClick: true },
-                    { action: 'choices', choices: ['N型（直觉）', 'S型（感觉）'] }
-                ];
-                this.processNextDialogue();
+                this.addBubble('stella', 'Stella', '您是n人还是s人？', false);
+                this.addChoiceButtons(['N型（直觉）', 'S型（感觉）']);
             }
             
             askMBTI_F() {
-                this.dialogueQueue = [
-                    { speaker: 'stella', name: 'Stella', text: '您是f人还是t人？', showClick: true },
-                    { action: 'choices', choices: ['F型（情感）', 'T型（思考）'] }
-                ];
-                this.processNextDialogue();
+                this.addBubble('stella', 'Stella', '您是f人还是t人？', false);
+                this.addChoiceButtons(['F型（情感）', 'T型（思考）']);
             }
             
             askMBTI_J() {
-                this.dialogueQueue = [
-                    { speaker: 'stella', name: 'Stella', text: '您是j人还是p人？', showClick: true },
-                    { action: 'choices', choices: ['J型（判断）', 'P型（感知）'] }
-                ];
-                this.processNextDialogue();
+                this.addBubble('stella', 'Stella', '您是j人还是p人？', false);
+                this.addChoiceButtons(['J型（判断）', 'P型（感知）']);
             }
             
             addMBTIChoices() {
