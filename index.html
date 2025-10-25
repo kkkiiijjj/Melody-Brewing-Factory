@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哼歌编曲 - Strudel Demo</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 应用LOFI风格到所有按钮 */
+        button:not(.record-btn) {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: 2px solid #4a5568;
+            box-shadow: 4px 4px 0px #2d3748;
+            transition: all 0.1s ease;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        button:not(.record-btn):hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #2d3748;
+        }
+        
+        button:not(.record-btn):active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #2d3748;
+        }
+        
+        button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .record-btn {
+            background: #28a745;
+            margin: 5px;
+        }
+        
+        .record-btn:hover:not(:disabled) {
+            background: #218838;
+        }
+        
+        .record-btn.recording {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .recording-section, .example-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        /* 像素风动画容器 */
+        .pixel-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .pixel-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            animation: pixelFloat 3s infinite ease-in-out;
+        }
+        
+        @keyframes pixelFloat {
+            0%, 100% { 
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0.1;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg);
+                opacity: 0.3;
+            }
+        }
+        
+        /* 音频可视化增强 */
+        #audioVisualizer {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            border: 2px solid #0f3460;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        #waveformCanvas {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        /* LOFI风格按钮 */
+        .lofi-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: 2px solid #4a5568;
+            box-shadow: 4px 4px 0px #2d3748;
+            transition: all 0.1s ease;
+        }
+        
+        .lofi-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #2d3748;
+        }
+        
+        .lofi-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #2d3748;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success { background: #48bb78; }
+        .error { background: #f56565; }
+        .info { background: #4299e1; }
+    </style>
+</head>
+<body>
+    <!-- 像素风背景动画 -->
+    <div class="pixel-animation" id="pixelAnimation"></div>
+    
+    <div class="container">
+        <h1>🎵 哼歌编曲 - LOFI Studio</h1>
+        <p>🎧 将你的哼唱转换为复古LOFI音乐，配像素风动画</p>
+        
+        <div class="container">
+            <h2>1. 录音或加载旋律数据</h2>
+            
+            <!-- 录音功能 -->
+            <div class="recording-section">
+                <h3>🎤 实时录音</h3>
+                <button id="startRecording" class="record-btn">开始录音</button>
+                <button id="stopRecording" class="record-btn" disabled>停止录音</button>
+                <button id="playRecording" class="record-btn" disabled>播放录音</button>
+                
+                <div id="recordingStatus" class="status info" style="display: none;">
+                    <!-- 录音状态显示 -->
+                </div>
+                
+                <div id="audioVisualizer" style="display: none; margin: 15px 0;">
+                    <canvas id="waveformCanvas" width="400" height="100" style="border: 1px solid #ccc; border-radius: 5px;"></canvas>
+                </div>
+            </div>
+            
+            <!-- 示例数据 -->
+            <div class="example-section">
+                <h3>📝 示例数据</h3>
+                <button id="loadExample">加载示例旋律</button>
+                <button id="generateRandom">生成随机旋律</button>
+            </div>
+            
+            <div id="melodyDisplay" class="code-block" style="display: none;">
+                <!-- 旋律数据将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>2. 转换为 Strudel 代码</h2>
+            <button id="convertToStrudel" disabled>生成 Strudel 代码</button>
+            
+            <div id="strudelCode" class="code-block" style="display: none;">
+                <!-- Strudel 代码将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>3. 播放音乐</h2>
+            <button id="playMusic" disabled>播放音乐</button>
+            <button id="stopMusic" disabled>停止播放</button>
+            <button id="exportCode" disabled>导出代码</button>
+            
+            <div id="playbackStatus" class="status info" style="display: none;">
+                <!-- 播放状态将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>4. 完整编曲示例</h2>
+            <button id="loadFullArrangement">加载完整编曲示例</button>
+            
+            <div id="fullArrangement" class="code-block" style="display: none;">
+                <!-- 完整编曲代码将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+    <script type="module">
+        // 主 JavaScript 代码在下面
+        import './strudel-demo.js';
+    </script>
+</body>
+</html>

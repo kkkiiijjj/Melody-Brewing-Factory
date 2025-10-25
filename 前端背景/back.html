@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清吧吧台与代码显示屏背景</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0a0a1a;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 背景代码显示屏 */
+        .code-display {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #0f0;
+            text-shadow: 0 0 8px #0f0, 0 0 16px #0f0;
+            overflow: hidden;
+            animation: screenFlicker 0.1s infinite linear;
+            /* 像素风效果 */
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            /* 光栅效果 */
+            background-image: 
+                linear-gradient(90deg, transparent 98%, rgba(0, 255, 0, 0.03) 100%),
+                linear-gradient(0deg, transparent 98%, rgba(0, 255, 0, 0.03) 100%);
+            background-size: 2px 2px;
+        }
+        
+        /* 边框层 - 最顶层 */
+        .border-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            /* 赛博朋克荧光边框效果 */
+            border: 8px solid #00ffff;
+            box-shadow: 
+                inset 0 0 0 4px #ff00ff,
+                0 0 10px #00ffff,
+                0 0 20px #00ffff,
+                0 0 30px #00ffff,
+                0 0 40px #00ffff,
+                inset 0 0 10px #ff00ff,
+                inset 0 0 20px #ff00ff,
+                0 0 50px rgba(0, 255, 255, 0.8),
+                0 0 80px rgba(255, 0, 255, 0.6);
+            animation: neonGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .code-line {
+            margin-bottom: 8px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .code-char {
+            display: inline-block;
+            animation: charFlicker 0.5s infinite ease-in-out;
+            animation-delay: calc(var(--char-index) * 0.05s);
+            /* 像素风字符效果 */
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            /* 字符像素化 */
+            transform: scale(1);
+            filter: contrast(1.2) brightness(1.1);
+        }
+        
+        
+        @keyframes charFlicker {
+            0%, 100% { 
+                opacity: 1; 
+                text-shadow: 0 0 8px #0f0, 0 0 16px #0f0;
+                filter: contrast(1.2) brightness(1.1);
+                transform: scale(1);
+            }
+            25% { 
+                opacity: 0.3; 
+                text-shadow: 0 0 4px #0f0;
+                filter: contrast(0.8) brightness(0.8);
+                transform: scale(0.98);
+            }
+            50% { 
+                opacity: 0.8; 
+                text-shadow: 0 0 12px #0f0, 0 0 20px #0f0;
+                filter: contrast(1.5) brightness(1.3);
+                transform: scale(1.02);
+            }
+            75% { 
+                opacity: 0.5; 
+                text-shadow: 0 0 6px #0f0;
+                filter: contrast(1.0) brightness(0.9);
+                transform: scale(0.99);
+            }
+        }
+        
+        
+        @keyframes screenFlicker {
+            0%, 100% { opacity: 1; }
+            99% { opacity: 0.98; }
+        }
+        
+        /* 光栅扫描线效果 */
+        .code-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                0deg,
+                transparent 0%,
+                rgba(0, 255, 0, 0.1) 1px,
+                transparent 2px,
+                transparent 100%
+            );
+            background-size: 100% 3px;
+            animation: scanlineMove 0.1s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* 像素网格效果 */
+        .code-display::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+            background-size: 8px 8px;
+            animation: pixelGrid 2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        @keyframes scanlineMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(3px); }
+        }
+        
+        @keyframes pixelGrid {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.1; }
+        }
+        
+        @keyframes neonGlow {
+            0% {
+                border-color: #00ffff;
+                box-shadow: 
+                    inset 0 0 0 4px #ff00ff,
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff,
+                    0 0 30px #00ffff,
+                    0 0 40px #00ffff,
+                    inset 0 0 10px #ff00ff,
+                    inset 0 0 20px #ff00ff,
+                    0 0 50px rgba(0, 255, 255, 0.8),
+                    0 0 80px rgba(255, 0, 255, 0.6);
+            }
+            50% {
+                border-color: #00ccff;
+                box-shadow: 
+                    inset 0 0 0 4px #ff33ff,
+                    0 0 15px #00ccff,
+                    0 0 30px #00ccff,
+                    0 0 45px #00ccff,
+                    0 0 60px #00ccff,
+                    inset 0 0 15px #ff33ff,
+                    inset 0 0 30px #ff33ff,
+                    0 0 70px rgba(0, 204, 255, 1),
+                    0 0 100px rgba(255, 51, 255, 0.8);
+            }
+            100% {
+                border-color: #0099ff;
+                box-shadow: 
+                    inset 0 0 0 4px #ff66ff,
+                    0 0 20px #0099ff,
+                    0 0 40px #0099ff,
+                    0 0 60px #0099ff,
+                    0 0 80px #0099ff,
+                    inset 0 0 20px #ff66ff,
+                    inset 0 0 40px #ff66ff,
+                    0 0 90px rgba(0, 153, 255, 1.2),
+                    0 0 120px rgba(255, 102, 255, 1);
+            }
+        }
+        
+        @keyframes scrollUp {
+            0% { transform: translateY(100%); }
+            100% { transform: translateY(-100%); }
+        }
+        
+        .scrolling-line {
+            animation: scrollUp 3s linear infinite;
+            animation-delay: calc(var(--line-index) * 0.2s);
+        }
+        
+        /* 吧台前景 */
+        .bar-foreground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-top: 200px;
+            pointer-events: none;
+        }
+        
+        .bar-foreground * {
+            pointer-events: auto;
+        }
+        
+        /* 对话系统样式 */
+        .dialogue-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 50;
+            pointer-events: auto;
+        }
+        
+        .dialogue-bubble {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.6;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.5),
+                inset 0 0 10px rgba(0, 255, 255, 0.1);
+            animation: bubbleGlow 2s ease-in-out infinite alternate;
+            max-width: 80%;
+        }
+        
+        .dialogue-bubble.stella {
+            margin-left: 0;
+            border-color: #ff00ff;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 255, 0.5),
+                inset 0 0 10px rgba(255, 0, 255, 0.1);
+        }
+        
+        .dialogue-bubble.user {
+            margin-left: auto;
+            background: rgba(0, 20, 40, 0.9);
+            border-color: #00ff88;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.5),
+                inset 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+        
+        .speaker-name {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        
+        .speaker-name.stella {
+            color: #ff00ff;
+            text-shadow: 0 0 5px #ff00ff;
+        }
+        
+        .speaker-name.user {
+            color: #00ff88;
+            text-shadow: 0 0 5px #00ff88;
+        }
+        
+        .choice-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .choice-btn {
+            background: linear-gradient(45deg, #00ffff, #0088ff);
+            border: 2px solid #00ffff;
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .choice-btn:hover {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            border-color: #00ff88;
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .choice-btn:active {
+            transform: translateY(0);
+        }
+        
+        .recording-btn {
+            background: linear-gradient(45deg, #ff0088, #ff4488);
+            border: 2px solid #ff00ff;
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 136, 0.5);
+            margin: 10px 0;
+        }
+        
+        .recording-btn:hover {
+            background: linear-gradient(45deg, #ff4488, #ff88aa);
+            box-shadow: 0 0 30px rgba(255, 0, 136, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .recording-btn.recording {
+            background: linear-gradient(45deg, #ff4444, #ff8888);
+            animation: recordingPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes bubbleGlow {
+            0% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1); }
+            100% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), inset 0 0 15px rgba(0, 255, 255, 0.2); }
+        }
+        
+        @keyframes recordingPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .bar-counter {
+            width: 100%;
+            height: 400px;
+            /* 默认样式作为后备 */
+            background: linear-gradient(to bottom, #3a2c1a, #1a1208);
+            border-radius: 0;
+            position: relative;
+        }
+        
+        /* 当有图片时覆盖默认样式 */
+        .bar-counter.has-image {
+            background-image: url('bar-counter.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background: url('bar-counter.png') center/cover no-repeat;
+        }
+        
+        
+        .bartender {
+            position: absolute;
+            bottom: 170px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 650px;
+            z-index: 15;
+            /* 默认透明背景 */
+            background-color: transparent;
+        }
+        
+        /* 当有图片时显示图片 */
+        .bartender.has-image {
+            background-image: url('bartender.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+        }
+        
+        /* 当有图片时隐藏伪元素 */
+        .bartender.has-image::before,
+        .bartender.has-image::after {
+            display: none;
+        }
+        
+        .bartender::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background-color: #f5d7b4;
+            border-radius: 50%;
+        }
+        
+        .bartender::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 50px;
+            background-color: #222;
+            border-radius: 50px 50px 0 0;
+        }
+        
+        
+        
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <!-- 背景代码显示屏 -->
+        <div class="code-display" id="codeDisplay">
+            <!-- 代码将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 前景吧台 -->
+        <div class="bar-foreground">
+            <div class="bartender"></div>
+            <div class="bar-counter"></div>
+        </div>
+        
+        <!-- 对话系统 -->
+        <div class="dialogue-container" id="dialogueContainer">
+            <!-- 对话内容将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 边框层 - 最顶层 -->
+        <div class="border-overlay"></div>
+    </div>
+    
+
+    <script>
+        // 专业的代码模板 - 带缩进和结构
+        const codeTemplates = [
+            '// ========================================',
+            '// 企业级微服务架构 - 用户管理模块',
+            '// ========================================',
+            '',
+            'import { Logger, Database, Redis } from \'@core/services\';',
+            'import { UserEntity, UserRole } from \'@entities/user\';',
+            'import { ValidationError, BusinessError } from \'@exceptions\';',
+            '',
+            '/**',
+            ' * 用户认证服务类',
+            ' * @class AuthenticationService',
+            ' */',
+            'export class AuthenticationService {',
+            '    private readonly logger: Logger;',
+            '    private readonly db: Database;',
+            '    private readonly redis: Redis;',
+            '',
+            '    constructor(dependencies: ServiceDependencies) {',
+            '        this.logger = dependencies.logger;',
+            '        this.db = dependencies.database;',
+            '        this.redis = dependencies.redis;',
+            '    }',
+            '',
+            '    /**',
+            '     * 用户登录认证',
+            '     * @param credentials 用户凭据',
+            '     * @returns Promise<AuthResult>',
+            '     */',
+            '    async authenticateUser(credentials: LoginCredentials): Promise<AuthResult> {',
+            '        try {',
+            '            const { username, password } = credentials;',
+            '            ',
+            '            // 参数验证',
+            '            if (!username || !password) {',
+            '                throw new ValidationError(\'用户名和密码不能为空\');',
+            '            }',
+            '            ',
+            '            // 查询用户信息',
+            '            const user = await this.db.query(',
+            '                \'SELECT * FROM users WHERE username = ?\',',
+            '                [username]',
+            '            );',
+            '            ',
+            '            if (!user) {',
+            '                throw new BusinessError(\'用户不存在\');',
+            '            }',
+            '            ',
+            '            // 验证密码',
+            '            const isValidPassword = await bcrypt.compare(password, user.passwordHash);',
+            '            if (!isValidPassword) {',
+            '                throw new BusinessError(\'密码错误\');',
+            '            }',
+            '            ',
+            '            // 生成JWT令牌',
+            '            const token = this.generateJWTToken(user);',
+            '            ',
+            '            // 缓存用户会话',
+            '            await this.redis.setex(`session:${user.id}`, 3600, token);',
+            '            ',
+            '            this.logger.info(`用户 ${username} 登录成功`);',
+            '            ',
+            '            return {',
+            '                success: true,',
+            '                token,',
+            '                user: this.sanitizeUser(user)',
+            '            };',
+            '        } catch (error) {',
+            '            this.logger.error(\'用户认证失败:\', error);',
+            '            throw error;',
+            '        }',
+            '    }',
+            '',
+            '    /**',
+            '     * 生成JWT令牌',
+            '     * @private',
+            '     */',
+            '    private generateJWTToken(user: UserEntity): string {',
+            '        const payload = {',
+            '            userId: user.id,',
+            '            username: user.username,',
+            '            role: user.role,',
+            '            iat: Math.floor(Date.now() / 1000),',
+            '            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24小时',
+            '        };',
+            '        ',
+            '        return jwt.sign(payload, process.env.JWT_SECRET!);',
+            '    }',
+            '}',
+            '',
+            '/**',
+            ' * 用户管理服务类',
+            ' * @class UserManagementService',
+            ' */',
+            'export class UserManagementService {',
+            '    private readonly logger: Logger;',
+            '    private readonly db: Database;',
+            '',
+            '    constructor(dependencies: ServiceDependencies) {',
+            '        this.logger = dependencies.logger;',
+            '        this.db = dependencies.database;',
+            '    }',
+            '',
+            '    /**',
+            '     * 创建新用户',
+            '     * @param userData 用户数据',
+            '     * @returns Promise<UserEntity>',
+            '     */',
+            '    async createUser(userData: CreateUserRequest): Promise<UserEntity> {',
+            '        const transaction = await this.db.beginTransaction();',
+            '        ',
+            '        try {',
+            '            // 数据验证',
+            '            await this.validateUserData(userData);',
+            '            ',
+            '            // 检查用户是否已存在',
+            '            const existingUser = await this.db.query(',
+            '                \'SELECT id FROM users WHERE email = ?\',',
+            '                [userData.email]',
+            '            );',
+            '            ',
+            '            if (existingUser) {',
+            '                throw new BusinessError(`邮箱 ${userData.email} 已被注册`);',
+            '            }',
+            '            ',
+            '            // 加密密码',
+            '            const passwordHash = await bcrypt.hash(userData.password, 12);',
+            '            ',
+            '            // 创建用户记录',
+            '            const userId = await this.db.query(',
+            '                `INSERT INTO users (username, email, password_hash, role, created_at) ',
+            '                 VALUES (?, ?, ?, ?, NOW())`,',
+            '                [',
+            '                    userData.username,',
+            '                    userData.email,',
+            '                    passwordHash,',
+            '                    userData.role || UserRole.USER',
+            '                ]',
+            '            );',
+            '            ',
+            '            await transaction.commit();',
+            '            ',
+            '            this.logger.info(`用户创建成功: ${userData.email}`);',
+            '            ',
+            '            return await this.getUserById(userId);',
+            '        } catch (error) {',
+            '            await transaction.rollback();',
+            '            this.logger.error(\'用户创建失败:\', error);',
+            '            throw error;',
+            '        }',
+            '    }',
+            '}',
+            '',
+            '// ========================================',
+            '// 数据库连接配置',
+            '// ========================================',
+            '',
+            'interface DatabaseConfig {',
+            '    host: string;',
+            '    port: number;',
+            '    username: string;',
+            '    password: string;',
+            '    database: string;',
+            '    pool: {',
+            '        min: number;',
+            '        max: number;',
+            '        acquireTimeoutMillis: number;',
+            '        idleTimeoutMillis: number;',
+            '    };',
+            '}',
+            '',
+            'const dbConfig: DatabaseConfig = {',
+            '    host: process.env.DB_HOST || \'localhost\',',
+            '    port: parseInt(process.env.DB_PORT || \'5432\'),',
+            '    username: process.env.DB_USERNAME || \'postgres\',',
+            '    password: process.env.DB_PASSWORD || \'\',',
+            '    database: process.env.DB_NAME || \'app_db\',',
+            '    pool: {',
+            '        min: 2,',
+            '        max: 10,',
+            '        acquireTimeoutMillis: 30000,',
+            '        idleTimeoutMillis: 30000,',
+            '    },',
+            '};',
+            '',
+            '// ========================================',
+            '// 工具函数和中间件',
+            '// ========================================',
+            '',
+            '/**',
+            ' * 请求日志中间件',
+            ' */',
+            'export const requestLogger = (req: Request, res: Response, next: NextFunction) => {',
+            '    const startTime = Date.now();',
+            '    ',
+            '    res.on(\'finish\', () => {',
+            '        const duration = Date.now() - startTime;',
+            '        logger.info(`${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);',
+            '    });',
+            '    ',
+            '    next();',
+            '};',
+            '',
+            '/**',
+            ' * 错误处理中间件',
+            ' */',
+            'export const errorHandler = (',
+            '    error: Error,',
+            '    req: Request,',
+            '    res: Response,',
+            '    next: NextFunction',
+            ') => {',
+            '    logger.error(\'Unhandled error:\', error);',
+            '    ',
+            '    if (error instanceof ValidationError) {',
+            '        return res.status(400).json({',
+            '            error: \'VALIDATION_ERROR\',',
+            '            message: error.message,',
+            '        });',
+            '    }',
+            '    ',
+            '    if (error instanceof BusinessError) {',
+            '        return res.status(409).json({',
+            '            error: \'BUSINESS_ERROR\',',
+            '            message: error.message,',
+            '        });',
+            '    }',
+            '    ',
+            '    res.status(500).json({',
+            '        error: \'INTERNAL_SERVER_ERROR\',',
+            '        message: \'服务器内部错误\',',
+            '    });',
+            '};'
+        ];
+        
+        // 生成随机代码行 - 长短参差不齐
+        function generateCodeLines(count) {
+            const lines = [];
+            const templates = [...codeTemplates];
+            
+            for (let i = 0; i < count; i++) {
+                if (templates.length > 0) {
+                    lines.push(templates[i % templates.length]);
+                } else {
+                    // 生成随机代码 - 创建长短不一的效果
+                    const keywords = ['function', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'class', 'async', 'await', 'try', 'catch', 'finally'];
+                    const symbols = ['{', '}', '(', ')', '[', ']', ';', '=', '+', '-', '*', '/', '=>', '...', '&&', '||', '!==', '==='];
+                    const variables = ['x', 'y', 'z', 'i', 'j', 'k', 'count', 'index', 'data', 'result', 'item', 'user', 'config', 'response', 'error'];
+                    const strings = ['"Hello World"', '"Error occurred"', "'user data'", '`template string`', '"API response"'];
+                    
+                let line = '';
+                    // 创建更极端的长度差异：短行(5-15字符) 和 长行(30-80字符)
+                    const isShortLine = Math.random() < 0.4; // 40%概率生成短行
+                    const lineLength = isShortLine ? 
+                        Math.floor(Math.random() * 10) + 5 : 
+                        Math.floor(Math.random() * 50) + 30;
+                
+                for (let j = 0; j < lineLength; j++) {
+                    const randomType = Math.random();
+                    
+                        if (randomType < 0.25) {
+                        // 关键字
+                        line += keywords[Math.floor(Math.random() * keywords.length)] + ' ';
+                        } else if (randomType < 0.5) {
+                        // 变量
+                        line += variables[Math.floor(Math.random() * variables.length)] + ' ';
+                        } else if (randomType < 0.7) {
+                        // 符号
+                        line += symbols[Math.floor(Math.random() * symbols.length)] + ' ';
+                        } else {
+                            // 字符串
+                            line += strings[Math.floor(Math.random() * strings.length)] + ' ';
+                    }
+                }
+                
+                    lines.push(line.trim());
+                }
+            }
+            
+            return lines;
+        }
+        
+        // 创建代码行
+        function createCodeLine(text, lineIndex) {
+            const codeLine = document.createElement('div');
+            codeLine.className = 'code-line scrolling-line';
+            codeLine.style.setProperty('--line-index', lineIndex);
+            
+            // 逐个字符创建
+            for (let i = 0; i < text.length; i++) {
+                const charSpan = document.createElement('span');
+                charSpan.className = 'code-char';
+                charSpan.textContent = text[i];
+                charSpan.style.setProperty('--char-index', i);
+                codeLine.appendChild(charSpan);
+            }
+            
+            return codeLine;
+        }
+        
+        // 填充代码显示屏
+        function populateCodeDisplay() {
+            const codeDisplay = document.getElementById('codeDisplay');
+            const lines = generateCodeLines(80); // 增加更多行数以显示参差效果
+            
+            lines.forEach((line, index) => {
+                const codeLine = createCodeLine(line, index);
+                codeDisplay.appendChild(codeLine);
+            });
+        }
+        
+        // 动态添加新代码行
+        function addNewCodeLine() {
+            const codeDisplay = document.getElementById('codeDisplay');
+            const lines = generateCodeLines(1);
+            const newLine = createCodeLine(lines[0], codeDisplay.children.length);
+            
+            codeDisplay.appendChild(newLine);
+            
+            // 移除最旧的行以保持性能
+            if (codeDisplay.children.length > 100) {
+                codeDisplay.removeChild(codeDisplay.firstChild);
+            }
+        }
+        
+        // 检测图片是否存在并切换样式
+        function checkImageExists(imagePath, element, className) {
+            const img = new Image();
+            img.onload = function() {
+                element.classList.add(className);
+                console.log(`✅ 图片加载成功: ${imagePath}`);
+            };
+            img.onerror = function() {
+                element.classList.remove(className);
+                console.log(`❌ 图片加载失败: ${imagePath}`);
+            };
+            img.src = imagePath;
+        }
+        
+        // 初始化
+        populateCodeDisplay();
+        
+        // 检测调酒师图片
+        const bartender = document.querySelector('.bartender');
+        checkImageExists('bartender.png', bartender, 'has-image');
+        
+        // 检测吧台图片
+        const barCounter = document.querySelector('.bar-counter');
+        checkImageExists('bar-counter.png', barCounter, 'has-image');
+        
+        // 定期添加新代码行
+        setInterval(addNewCodeLine, 3000);
+        
+        // 随机改变字符颜色
+        setInterval(() => {
+            const chars = document.querySelectorAll('.code-char');
+            chars.forEach(char => {
+                if (Math.random() < 0.1) {
+                    char.style.color = Math.random() < 0.5 ? '#0f0' : '#0ff';
+                }
+            });
+        }, 2000);
+        
+        // 对话系统
+        class DialogueSystem {
+            constructor() {
+                this.container = document.getElementById('dialogueContainer');
+                this.currentStep = 0;
+                this.userChoices = {
+                    melody: null,
+                    style: null,
+                    mbti: null
+                };
+                this.init();
+            }
+            
+            init() {
+                this.showWelcome();
+            }
+            
+            showWelcome() {
+                this.addBubble('stella', 'Stella', '晚上好，一位新客人。欢迎来到「旋律酿造厂」，一个能用声音调制鸡尾酒的地方。我是这里的调酒师，Stella。看起来，您想尝试一杯特调的"声音鸡尾酒"？');
+                this.addChoiceButtons(['开始调制', '了解更多']);
+            }
+            
+            addBubble(speaker, name, text) {
+                const bubble = document.createElement('div');
+                bubble.className = `dialogue-bubble ${speaker}`;
+                bubble.innerHTML = `
+                    <div class="speaker-name ${speaker}">${name}</div>
+                    <div>${text}</div>
+                `;
+                this.container.appendChild(bubble);
+                this.scrollToBottom();
+            }
+            
+            addChoiceButtons(choices) {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'choice-buttons';
+                
+                choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.className = 'choice-btn';
+                    button.textContent = choice;
+                    button.onclick = () => this.handleChoice(choice);
+                    buttonContainer.appendChild(button);
+                });
+                
+                this.container.appendChild(buttonContainer);
+                this.scrollToBottom();
+            }
+            
+            addRecordingButton() {
+                const button = document.createElement('button');
+                button.className = 'recording-btn';
+                button.textContent = '🎤 开始录制';
+                button.onclick = () => this.startRecording();
+                this.container.appendChild(button);
+                this.scrollToBottom();
+            }
+            
+            handleChoice(choice) {
+                this.clearChoices();
+                
+                switch(choice) {
+                    case '开始调制':
+                        this.step1_BaseMelody();
+                        break;
+                    case '了解更多':
+                        this.addBubble('stella', 'Stella', '「旋律酿造厂」是一个神奇的地方，在这里，您的歌声会变成调酒的原料。每一段旋律都有它独特的"味道"，而我的工作就是将这些"味道"融合成一杯完美的音乐鸡尾酒。');
+                        this.addChoiceButtons(['听起来很有趣，开始吧！']);
+                        break;
+                    case '听起来很有趣，开始吧！':
+                        this.step1_BaseMelody();
+                        break;
+                    case '爵士':
+                    case '电子':
+                    case '古典':
+                    case '流行':
+                    case 'Lo-fi':
+                    case '摇滚':
+                        this.userChoices.style = choice;
+                        this.step3_Personality();
+                        break;
+                    case '开始录制':
+                        this.startRecording();
+                        break;
+                }
+            }
+            
+            step1_BaseMelody() {
+                this.addBubble('stella', 'Stella', '太好了。我的工作，就是将您带来的独特"原料"，融合成一杯只属于您的音乐。那么，我们开始吧？首先，我需要您提供三种核心的"基酒"和"风味"。');
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '每一杯经典的鸡尾酒，都离不开一份优质的"基酒"。请您为我"哼唱"一段旋律吧，无论是一段熟悉的副歌，还是您脑海中突然闪过的灵感片段都可以。它将是这杯音乐最原始的底色。');
+                    this.addRecordingButton();
+                }, 2000);
+            }
+            
+            startRecording() {
+                const button = document.querySelector('.recording-btn');
+                if (button) {
+                    button.textContent = '🔴 录制中...';
+                    button.classList.add('recording');
+                    
+                    // 模拟录制过程
+                    setTimeout(() => {
+                        button.textContent = '✅ 录制完成';
+                        button.classList.remove('recording');
+                        setTimeout(() => {
+                            this.step1_Complete();
+                        }, 1000);
+                    }, 3000);
+                }
+            }
+            
+            step1_Complete() {
+                const adjectives = ['灵动', '深情', '充满力量', '优雅', '活泼', '神秘', '温暖', '激昂'];
+                const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                
+                this.addBubble('stella', 'Stella', `（做出侧耳倾听，然后若有所思的表情）嗯……我收到了。一段非常${randomAdj}的旋律。很好的开端，这瓶"基酒"潜力无穷。`);
+                setTimeout(() => {
+                    this.step2_Style();
+                }, 2000);
+            }
+            
+            step2_Style() {
+                this.addBubble('stella', 'Stella', '基酒已备，接下来是决定风味的时候了。您希望您的这杯音乐，是哪种"口感"呢？');
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '是想来点爵士的微醺与暧昧，像一杯Old Fashioned？还是电子音乐的冰凉与炸裂，如同一杯Mojito？或者，您偏爱古典的醇厚与复杂，像一杯层次丰富的Manhattan？请告诉我您的选择。');
+                    this.addChoiceButtons(['爵士', '电子', '古典', '流行', 'Lo-fi', '摇滚']);
+                }, 2000);
+            }
+            
+            step3_Personality() {
+                this.addBubble('stella', 'Stella', `明智之选。${this.userChoices.style}的风味，总能带来意想不到的惊喜。我已经能想象它和您的旋律融合后的样子了。`);
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '最后，也是我最引以为傲的环节——注入一丝您的个人色彩。这就像鸡尾酒里那滴神秘的"苦精"，看似微不足道，却能让整杯酒拥有独一无二的灵魂。');
+                    setTimeout(() => {
+                        this.addBubble('stella', 'Stella', '如果不介意，可以告诉我您的MBTI人格类型吗？比如，您是更偏向于从独处中获取能量的I型，还是热爱与人交流的E型？这能帮助我调整这首音乐的"气场"，是更适合一个人静静品味，还是能点燃整个派对的氛围。');
+                        this.addMBTIChoices();
+                    }, 2000);
+                }, 2000);
+            }
+            
+            addMBTIChoices() {
+                const mbtiTypes = [
+                    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+                    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+                    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+                    'ISTP', 'ISFP', 'ESTP', 'ESFP'
+                ];
+                
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'choice-buttons';
+                
+                // 显示前8个类型
+                mbtiTypes.slice(0, 8).forEach(type => {
+                    const button = document.createElement('button');
+                    button.className = 'choice-btn';
+                    button.textContent = type;
+                    button.onclick = () => this.handleMBTIChoice(type);
+                    buttonContainer.appendChild(button);
+                });
+                
+                this.container.appendChild(buttonContainer);
+                this.scrollToBottom();
+            }
+            
+            handleMBTIChoice(mbti) {
+                this.userChoices.mbti = mbti;
+                this.clearChoices();
+                this.finalStep();
+            }
+            
+            finalStep() {
+                this.addBubble('stella', 'Stella', `（眼神中闪过一丝了然）啊，原来是${this.userChoices.mbti}。我明白了。这瓶"秘料"会让最终的作品更加贴合您的气质。感谢您的分享。`);
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '完美！所有的原料都已集齐。\n您的个人旋律——我们的生命之水。\n' + this.userChoices.style + '——我们的风味利口酒。\n还有' + this.userChoices.mbti + '的人格特质——那点睛之笔的灵魂秘料。');
+                    setTimeout(() => {
+                        this.addBubble('stella', 'Stella', '现在，请稍坐片刻，让我为您现场"调制"。这需要一点魔法和时间。');
+                        this.showMixingAnimation();
+                    }, 2000);
+                }, 2000);
+            }
+            
+            showMixingAnimation() {
+                const mixingBubble = document.createElement('div');
+                mixingBubble.className = 'dialogue-bubble stella';
+                mixingBubble.innerHTML = `
+                    <div class="speaker-name stella">Stella</div>
+                    <div>🔮 正在生成您的音乐鸡尾酒…</div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #ff00ff;">
+                        ✨ 调制中... ✨ 融合旋律... ✨ 注入风格... ✨ 添加人格特质...
+                    </div>
+                `;
+                this.container.appendChild(mixingBubble);
+                this.scrollToBottom();
+                
+                // 模拟调制过程
+                setTimeout(() => {
+                    this.showFinalResult();
+                }, 5000);
+            }
+            
+            showFinalResult() {
+                const drinkNames = {
+                    'INTJ': 'INTJ的月光小夜曲',
+                    'INTP': 'INTP的电路桑格利亚',
+                    'ENTJ': 'ENTJ的王者马提尼',
+                    'ENTP': 'ENTP的电路桑格利亚',
+                    'INFJ': 'INFJ的月光小夜曲',
+                    'INFP': 'INFP的梦幻莫吉托',
+                    'ENFJ': 'ENFJ的温暖威士忌',
+                    'ENFP': 'ENFP的活力朗姆酒'
+                };
+                
+                const drinkName = drinkNames[this.userChoices.mbti] || `${this.userChoices.mbti}的特调鸡尾酒`;
+                
+                this.addBubble('stella', 'Stella', `（将一杯泛着微光、仿佛有音符在流动的"虚拟鸡尾酒"推到用户面前）您的特调，「${drinkName}」，完成了。`);
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '请戴上耳机，细细品味。希望这杯由您亲自参与酿造的声音，能带给您一段美妙的时光。如果喜欢，随时可以回来，我们再换一种配方。');
+                    this.addChoiceButtons(['重新调制', '结束对话']);
+                }, 2000);
+            }
+            
+            clearChoices() {
+                const buttons = this.container.querySelectorAll('.choice-buttons, .recording-btn');
+                buttons.forEach(btn => btn.remove());
+            }
+            
+            scrollToBottom() {
+                this.container.scrollTop = this.container.scrollHeight;
+            }
+        }
+        
+        // 初始化对话系统
+        const dialogueSystem = new DialogueSystem();
+    </script>
+</body>
+</html>
