@@ -292,6 +292,60 @@
             max-height: 200px;
         }
         
+        /* 鸡尾酒显示区域 */
+        .cocktail-display {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            pointer-events: auto;
+            opacity: 0;
+            transition: all 0.8s ease-in-out;
+        }
+        
+        .cocktail-display.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        
+        .cocktail-image {
+            width: 220px;
+            height: 320px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+        }
+        
+        .cocktail-image:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4)) brightness(1.1);
+        }
+        
+        .cocktail-image:active {
+            transform: scale(0.95);
+        }
+        
+        .cocktail-glow {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: cocktailPulse 2s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+        
+        @keyframes cocktailPulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0.8; transform: scale(1.1); }
+        }
+        
         .dialogue-bubble {
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #00ffff;
@@ -528,6 +582,12 @@
             <div class="bar-counter"></div>
         </div>
         
+        <!-- 鸡尾酒显示区域 -->
+        <div class="cocktail-display" id="cocktailDisplay">
+            <div class="cocktail-glow"></div>
+            <div class="cocktail-image" id="cocktailImage"></div>
+    </div>
+    
         <!-- 对话系统 -->
         <div class="dialogue-container" id="dialogueContainer">
             <!-- 对话内容将通过JavaScript动态生成 -->
@@ -772,6 +832,86 @@
             '        error: \'INTERNAL_SERVER_ERROR\',',
             '        message: \'服务器内部错误\',',
             '    });',
+            '};',
+            '',
+            '// 数据验证工具函数',
+            'const validateEmail = (email) => {',
+            '    const regex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;',
+            '    return regex.test(email);',
+            '};',
+            '',
+            '// 缓存管理类',
+            'class CacheManager {',
+            '    constructor() {',
+            '        this.cache = new Map();',
+            '        this.ttl = 3600000; // 1小时',
+            '    }',
+            '',
+            '    set(key, value, ttl = this.ttl) {',
+            '        const expireTime = Date.now() + ttl;',
+            '        this.cache.set(key, { value, expireTime });',
+            '    }',
+            '',
+            '    get(key) {',
+            '        const item = this.cache.get(key);',
+            '        if (!item) return null;',
+            '',
+            '        if (Date.now() > item.expireTime) {',
+            '            this.cache.delete(key);',
+            '            return null;',
+            '        }',
+            '',
+            '        return item.value;',
+            '    }',
+            '}',
+            '',
+            '// 错误处理中间件',
+            'const errorHandler = (err, req, res, next) => {',
+            '    console.error(\'Error:\', err);',
+            '    ',
+            '    if (err.name === \'ValidationError\') {',
+            '        return res.status(400).json({',
+            '            error: \'VALIDATION_ERROR\',',
+            '            message: err.message',
+            '        });',
+            '    }',
+            '    ',
+            '    res.status(500).json({',
+            '        error: \'INTERNAL_ERROR\',',
+            '        message: \'服务器内部错误\'',
+            '    });',
+            '};',
+            '',
+            '// 工具函数集合',
+            'const utils = {',
+            '    formatDate: (date) => {',
+            '        return new Intl.DateTimeFormat(\'zh-CN\').format(date);',
+            '    },',
+            '    ',
+            '    generateId: () => {',
+            '        return Math.random().toString(36).substr(2, 9);',
+            '    },',
+            '    ',
+            '    debounce: (func, wait) => {',
+            '        let timeout;',
+            '        return function executedFunction(...args) {',
+            '            const later = () => {',
+            '                clearTimeout(timeout);',
+            '                func(...args);',
+            '            };',
+            '            clearTimeout(timeout);',
+            '            timeout = setTimeout(later, wait);',
+            '        };',
+            '    }',
+            '};',
+            '',
+            '// 导出模块',
+            'module.exports = {',
+            '    AuthenticationService,',
+            '    UserService,',
+            '    CacheManager,',
+            '    errorHandler,',
+            '    utils',
             '};'
         ];
         
@@ -781,42 +921,39 @@
             const templates = [...codeTemplates];
             
             for (let i = 0; i < count; i++) {
-                if (templates.length > 0) {
-                    lines.push(templates[i % templates.length]);
-                } else {
-                    // 生成随机代码 - 创建长短不一的效果
-                    const keywords = ['function', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'class', 'async', 'await', 'try', 'catch', 'finally'];
-                    const symbols = ['{', '}', '(', ')', '[', ']', ';', '=', '+', '-', '*', '/', '=>', '...', '&&', '||', '!==', '==='];
-                    const variables = ['x', 'y', 'z', 'i', 'j', 'k', 'count', 'index', 'data', 'result', 'item', 'user', 'config', 'response', 'error'];
-                    const strings = ['"Hello World"', '"Error occurred"', "'user data'", '`template string`', '"API response"'];
-                    
-                let line = '';
-                    // 创建更极端的长度差异：短行(5-15字符) 和 长行(30-80字符)
-                    const isShortLine = Math.random() < 0.4; // 40%概率生成短行
-                    const lineLength = isShortLine ? 
-                        Math.floor(Math.random() * 10) + 5 : 
-                        Math.floor(Math.random() * 50) + 30;
+                // 随机选择模板，增加多样性
+                const templateIndex = Math.floor(Math.random() * templates.length);
+                let line = templates[templateIndex];
                 
-                for (let j = 0; j < lineLength; j++) {
-                    const randomType = Math.random();
-                    
-                        if (randomType < 0.25) {
-                        // 关键字
-                        line += keywords[Math.floor(Math.random() * keywords.length)] + ' ';
-                        } else if (randomType < 0.5) {
-                        // 变量
-                        line += variables[Math.floor(Math.random() * variables.length)] + ' ';
-                        } else if (randomType < 0.7) {
-                        // 符号
-                        line += symbols[Math.floor(Math.random() * symbols.length)] + ' ';
-                        } else {
-                            // 字符串
-                            line += strings[Math.floor(Math.random() * strings.length)] + ' ';
-                    }
+                // 如果模板行是等号分隔符，替换为更有意义的代码
+                if (line.includes('=') && line.length > 20 && line.includes('//')) {
+                    // 生成替代的代码注释
+                    const comments = [
+                        '// 系统初始化完成',
+                        '// 数据库连接已建立',
+                        '// 缓存服务启动成功',
+                        '// API接口已就绪',
+                        '// 用户认证模块加载',
+                        '// 日志系统初始化',
+                        '// 配置参数验证通过',
+                        '// 服务健康检查正常',
+                        '// 内存使用率正常',
+                        '// 网络连接稳定',
+                        '// 微服务架构运行中',
+                        '// 负载均衡器状态正常',
+                        '// 消息队列处理中',
+                        '// 定时任务执行完成',
+                        '// 安全策略已更新',
+                        '// 性能监控数据收集',
+                        '// 用户会话管理正常',
+                        '// 文件上传服务就绪',
+                        '// 邮件发送队列处理',
+                        '// 数据备份任务完成'
+                    ];
+                    line = comments[Math.floor(Math.random() * comments.length)];
                 }
                 
-                    lines.push(line.trim());
-                }
+                lines.push(line);
             }
             
             return lines;
@@ -918,11 +1055,26 @@
                 };
                 this.dialogueQueue = [];
                 this.isWaitingForClick = false;
+                
+                // 预加载音效
+                this.preloadAudio();
                 this.init();
             }
             
             init() {
                 this.showWelcome();
+            }
+            
+            // 预加载音效
+            preloadAudio() {
+                try {
+                    this.glassAudio = new Audio('glass-clink.mp3');
+                    this.glassAudio.preload = 'auto';
+                    this.glassAudio.volume = 0.7;
+                    console.log('音效预加载完成');
+                } catch (e) {
+                    console.log('音效预加载失败:', e);
+                }
             }
             
             showWelcome() {
@@ -1064,6 +1216,8 @@
                         this.startRecording();
                         break;
                     case '重新调制':
+                        // 隐藏鸡尾酒
+                        this.hideCocktail();
                         // 重置用户选择
                         this.userChoices = {
                             melody: null,
@@ -1219,7 +1373,12 @@
                 
                 // 模拟调制过程
                 setTimeout(() => {
-                    this.showFinalResult();
+                    // 先显示鸡尾酒
+                    this.showCocktail(this.userChoices.mbti);
+                    // 然后显示最终结果
+                    setTimeout(() => {
+                        this.showFinalResult();
+                    }, 500);
                 }, 5000);
             }
             
@@ -1232,16 +1391,110 @@
                     'INFJ': 'INFJ的月光小夜曲',
                     'INFP': 'INFP的梦幻莫吉托',
                     'ENFJ': 'ENFJ的温暖威士忌',
-                    'ENFP': 'ENFP的活力朗姆酒'
+                    'ENFP': 'ENFP的活力朗姆酒',
+                    'ISTJ': 'ISTJ的经典马提尼',
+                    'ISFJ': 'ISFJ的温柔威士忌',
+                    'ESTJ': 'ESTJ的权威朗姆酒',
+                    'ESFJ': 'ESFJ的温暖香槟',
+                    'ISTP': 'ISTP的冒险龙舌兰',
+                    'ISFP': 'ISFP的艺术莫吉托',
+                    'ESTP': 'ESTP的活力伏特加',
+                    'ESFP': 'ESFP的欢乐桑格利亚'
                 };
                 
                 const drinkName = drinkNames[this.userChoices.mbti] || `${this.userChoices.mbti}的特调鸡尾酒`;
                 
                 this.addBubble('stella', 'Stella', `（将一杯泛着微光、仿佛有音符在流动的"虚拟鸡尾酒"推到用户面前）您的特调，「${drinkName}」，完成了。`);
                 setTimeout(() => {
-                    this.addBubble('stella', 'Stella', '请戴上耳机，细细品味。希望这杯由您亲自参与酿造的声音，能带给您一段美妙的时光。如果喜欢，随时可以回来，我们再换一种配方。');
+                    this.addBubble('stella', 'Stella', '请点击酒杯，聆听您的专属音乐。希望这杯由您亲自参与酿造的声音，能带给您一段美妙的时光。如果喜欢，随时可以回来，我们再换一种配方。');
                     this.addChoiceButtons(['重新调制', '结束对话']);
                 }, 2000);
+            }
+            
+            // 显示鸡尾酒图片
+            showCocktail(mbti) {
+                const cocktailDisplay = document.getElementById('cocktailDisplay');
+                const cocktailImage = document.getElementById('cocktailImage');
+                
+                // 设置鸡尾酒图片
+                const imagePath = `cocktails/${mbti.toLowerCase()}.png`;
+                cocktailImage.style.backgroundImage = `url('${imagePath}')`;
+                
+                // 显示鸡尾酒
+                cocktailDisplay.classList.add('show');
+                
+                // 添加点击事件监听器
+                cocktailImage.onclick = () => this.playCocktailSound();
+            }
+            
+            // 播放鸡尾酒音效
+            playCocktailSound() {
+                // 添加点击效果
+                const cocktailImage = document.getElementById('cocktailImage');
+                cocktailImage.style.transform = 'scale(0.9)';
+                
+                // 播放酒杯碰撞音效
+                this.playGlassSound().then(() => {
+                    // 音效播放完成后恢复图片大小
+                    setTimeout(() => {
+                        cocktailImage.style.transform = 'scale(1)';
+                    }, 150);
+                    
+                    // 显示音乐播放提示
+                    this.showMusicPlaybackMessage();
+                }).catch(e => {
+                    console.log('音频播放失败:', e);
+                    // 即使音效失败也要恢复图片大小
+                    setTimeout(() => {
+                        cocktailImage.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            }
+            
+            // 播放酒杯音效
+            playGlassSound() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        if (this.glassAudio) {
+                            // 使用预加载的音频
+                            this.glassAudio.currentTime = 0; // 重置播放位置
+                            this.glassAudio.play().then(() => {
+                                // 音效播放完成
+                                setTimeout(() => {
+                                    resolve();
+                                }, this.glassAudio.duration * 1000);
+                            }).catch(reject);
+                        } else {
+                            // 如果预加载失败，创建新的音频
+                            const audio = new Audio('glass-clink.mp3');
+                            audio.volume = 0.7;
+                            audio.play().then(() => {
+                                setTimeout(() => {
+                                    resolve();
+                                }, audio.duration * 1000);
+                            }).catch(reject);
+                        }
+                    } catch (e) {
+                        console.log('音频播放失败:', e);
+                        resolve(); // 即使失败也继续执行
+                    }
+                });
+            }
+            
+            // 显示音乐播放提示
+            showMusicPlaybackMessage() {
+                this.addBubble('stella', 'Stella', '🎵 美妙的音乐开始流淌... 请戴上耳机，享受您的专属旋律！', false);
+                
+                // 3秒后显示操作提示
+                setTimeout(() => {
+                    this.addBubble('stella', 'Stella', '💡 提示：您可以随时点击"重新调制"来尝试不同的音乐风格。', false);
+                }, 3000);
+            }
+            
+            // 隐藏鸡尾酒
+            hideCocktail() {
+                const cocktailDisplay = document.getElementById('cocktailDisplay');
+                cocktailDisplay.classList.remove('show');
             }
             
             clearBubbles() {
