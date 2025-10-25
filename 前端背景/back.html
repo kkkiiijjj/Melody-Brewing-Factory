@@ -50,7 +50,7 @@
             color: #0f0;
             text-shadow: 0 0 8px #0f0, 0 0 16px #0f0;
             overflow: hidden;
-            animation: screenFlicker 0.1s infinite linear;
+            animation: screenFlicker 0.2s infinite linear;
             /* 像素风效果 */
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
@@ -60,6 +60,9 @@
                 linear-gradient(90deg, transparent 98%, rgba(0, 255, 0, 0.03) 100%),
                 linear-gradient(0deg, transparent 98%, rgba(0, 255, 0, 0.03) 100%);
             background-size: 2px 2px;
+            /* GPU加速 */
+            transform: translateZ(0);
+            will-change: transform;
         }
         
         /* 边框层 - 最顶层 */
@@ -97,8 +100,8 @@
         
         .code-char {
             display: inline-block;
-            animation: charFlicker 0.5s infinite ease-in-out;
-            animation-delay: calc(var(--char-index) * 0.05s);
+            animation: charFlicker 1s infinite ease-in-out;
+            animation-delay: calc(var(--char-index) * 0.1s);
             /* 像素风字符效果 */
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
@@ -106,6 +109,7 @@
             /* 字符像素化 */
             transform: scale(1);
             filter: contrast(1.2) brightness(1.1);
+            will-change: opacity, filter;
         }
         
         
@@ -255,12 +259,23 @@
             align-items: flex-end;
             padding-top: 200px;
             pointer-events: none;
-            /* 光栅效果 */
+        }
+        
+        /* 吧台光栅效果层 */
+        .bar-foreground::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: 
-                linear-gradient(90deg, transparent 98%, rgba(255, 255, 255, 0.05) 100%),
-                linear-gradient(0deg, transparent 98%, rgba(255, 255, 255, 0.05) 100%);
+                linear-gradient(90deg, transparent 98%, rgba(255, 255, 255, 0.08) 100%),
+                linear-gradient(0deg, transparent 98%, rgba(255, 255, 255, 0.08) 100%);
             background-size: 3px 3px;
             background-repeat: repeat;
+            pointer-events: none;
+            z-index: 1;
         }
         
         .bar-foreground * {
@@ -348,8 +363,9 @@
             font-family: 'Courier New', monospace;
             font-weight: bold;
             font-size: 12px;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            will-change: transform, box-shadow, background;
         }
         
         .choice-btn:hover {
@@ -874,18 +890,21 @@
         const barCounter = document.querySelector('.bar-counter');
         checkImageExists('bar-counter.png', barCounter, 'has-image');
         
-        // 定期添加新代码行
-        setInterval(addNewCodeLine, 3000);
+        // 定期添加新代码行 - 优化频率
+        setInterval(addNewCodeLine, 4000);
         
-        // 随机改变字符颜色
+        // 随机改变字符颜色 - 优化性能
         setInterval(() => {
             const chars = document.querySelectorAll('.code-char');
-            chars.forEach(char => {
-                if (Math.random() < 0.1) {
-                    char.style.color = Math.random() < 0.5 ? '#0f0' : '#0ff';
+            // 只改变少量字符，减少重绘
+            const sampleSize = Math.min(chars.length, 8);
+            for (let i = 0; i < sampleSize; i++) {
+                const randomIndex = Math.floor(Math.random() * chars.length);
+                if (Math.random() < 0.05) {
+                    chars[randomIndex].style.color = Math.random() < 0.5 ? '#0f0' : '#0ff';
                 }
-            });
-        }, 2000);
+            }
+        }, 4000);
         
         // 对话系统
         class DialogueSystem {
@@ -1043,6 +1062,19 @@
                         break;
                     case '开始录制':
                         this.startRecording();
+                        break;
+                    case '重新调制':
+                        // 重置用户选择
+                        this.userChoices = {
+                            melody: null,
+                            style: null,
+                            mbti: null
+                        };
+                        // 重新开始对话
+                        this.showWelcome();
+                        break;
+                    case '结束对话':
+                        this.addBubble('stella', 'Stella', '感谢您的光临！期待下次再见。', false);
                         break;
                 }
             }
