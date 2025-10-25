@@ -65,6 +65,73 @@
             will-change: transform;
         }
         
+        /* 音浪效果容器 */
+        .audio-waves {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 12;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        
+        /* 音浪条 */
+        .wave-bar {
+            position: absolute;
+            bottom: 180px;
+            width: 4px;
+            background: linear-gradient(to top, 
+                rgba(0, 255, 0, 1) 0%, 
+                rgba(0, 255, 255, 0.8) 50%, 
+                rgba(255, 0, 255, 0.6) 100%);
+            border-radius: 2px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+            height: 100px;
+            opacity: 0.6;
+            animation: waveFadeIn 0.5s ease-out forwards;
+            transition: all 0.1s ease-out;
+        }
+        
+        /* 音浪动画 - 从左到右依次变高 */
+        @keyframes waveAnimation {
+            0% { 
+                height: 20px; 
+                opacity: 0.6;
+            }
+            25% { 
+                height: 80px; 
+                opacity: 0.8;
+            }
+            50% { 
+                height: 150px; 
+                opacity: 1;
+            }
+            75% { 
+                height: 80px; 
+                opacity: 0.8;
+            }
+            100% { 
+                height: 20px; 
+                opacity: 0.6;
+            }
+        }
+        
+        /* 音浪渐显动画 */
+        @keyframes waveFadeIn {
+            from {
+                opacity: 0;
+                transform: scaleY(0);
+            }
+            to {
+                opacity: 1;
+                transform: scaleY(1);
+            }
+        }
+        
+        /* 音浪条位置和延迟将通过JavaScript动态设置 */
+        
         /* 边框层 - 最顶层 */
         .border-overlay {
             position: absolute;
@@ -573,6 +640,10 @@
     <div class="container">
         <!-- 背景代码显示屏 -->
         <div class="code-display" id="codeDisplay">
+            <!-- 音浪效果 -->
+            <div class="audio-waves" id="audioWaves">
+                <!-- 音浪条将通过JavaScript动态生成 -->
+            </div>
             <!-- 代码将通过JavaScript动态生成 -->
         </div>
         
@@ -1016,8 +1087,93 @@
             img.src = imagePath;
         }
         
+        // 初始化音浪效果
+        function initializeAudioWaves() {
+            const audioWaves = document.getElementById('audioWaves');
+            
+            if (!audioWaves) {
+                console.error('音浪容器未找到');
+                return;
+            }
+            
+            // 创建40个音浪条
+            for (let i = 0; i < 40; i++) {
+                const waveBar = document.createElement('div');
+                waveBar.className = 'wave-bar';
+                
+                // 动态设置位置和渐显延迟
+                const leftPosition = (i / 39) * 100; // 0% 到 100%
+                const fadeInDelay = (i / 39) * 2; // 0s 到 2s 的渐显延迟
+                
+                waveBar.style.left = leftPosition + '%';
+                waveBar.style.animationDelay = fadeInDelay + 's'; // 渐显动画的延迟
+                
+                audioWaves.appendChild(waveBar);
+            }
+            
+            console.log('音浪效果已初始化，创建了', audioWaves.children.length, '个音浪条');
+            
+            // 启动动态音浪效果
+            startDynamicWaves();
+        }
+        
+        // 动态音浪效果 - 从左到右依次变高
+        function startDynamicWaves() {
+            const waveBars = document.querySelectorAll('.wave-bar');
+            
+            console.log('找到', waveBars.length, '个音浪条');
+            
+            // 创建波浪效果：从左到右依次变高
+            function createWave() {
+                const waveBars = document.querySelectorAll('.wave-bar');
+                const totalBars = waveBars.length;
+                
+                // 调试信息
+                if (totalBars === 0) {
+                    console.warn('没有找到音浪条，重新初始化...');
+                    initializeAudioWaves();
+                    return;
+                }
+                
+                waveBars.forEach((bar, index) => {
+                    // 计算波浪位置 (0-1)
+                    const wavePosition = index / (totalBars - 1);
+                    
+                    // 创建正弦波效果
+                    const wavePhase = (Date.now() / 1000) * 2; // 每秒2个周期
+                    const waveOffset = wavePosition * Math.PI * 2; // 从左到右的相位差
+                    const waveValue = Math.sin(wavePhase + waveOffset);
+                    
+                    // 将正弦波值转换为高度 (0.3-1.0)
+                    const heightMultiplier = (waveValue + 1) / 2 * 0.7 + 0.3;
+                    const baseHeight = 150;
+                    const currentHeight = baseHeight * heightMultiplier;
+                    
+                    // 设置高度
+                    bar.style.height = currentHeight + 'px';
+                    
+                    // 根据高度调整透明度
+                    const opacity = 0.4 + heightMultiplier * 0.6;
+                    bar.style.opacity = opacity;
+                    
+                    // 根据位置调整颜色
+                    const hue = 120 + wavePosition * 120; // 从绿色到紫色
+                    bar.style.background = `linear-gradient(to top, 
+                        hsla(${hue}, 100%, 50%, 1) 0%, 
+                        hsla(${hue + 60}, 100%, 50%, 0.8) 50%, 
+                        hsla(${hue + 120}, 100%, 50%, 0.6) 100%)`;
+                });
+            }
+            
+            // 每50ms更新一次，创造流畅的波浪效果
+            setInterval(createWave, 50);
+        }
+        
         // 初始化
         populateCodeDisplay();
+        
+        // 初始化音浪效果
+        initializeAudioWaves();
         
         // 检测调酒师图片
         const bartender = document.querySelector('.bartender');
