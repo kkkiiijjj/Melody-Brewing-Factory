@@ -255,6 +255,12 @@
             align-items: flex-end;
             padding-top: 200px;
             pointer-events: none;
+            /* 光栅效果 */
+            background-image: 
+                linear-gradient(90deg, transparent 98%, rgba(255, 255, 255, 0.05) 100%),
+                linear-gradient(0deg, transparent 98%, rgba(255, 255, 255, 0.05) 100%);
+            background-size: 3px 3px;
+            background-repeat: repeat;
         }
         
         .bar-foreground * {
@@ -1053,17 +1059,26 @@
             startRecording() {
                 const button = document.querySelector('.recording-btn');
                 if (button) {
-                    button.textContent = '🔴 录制中...';
+                    button.textContent = '⏹️ 停止录制';
                     button.classList.add('recording');
                     
-                    // 模拟录制过程
+                    // 修改按钮点击事件为停止录制
+                    button.onclick = () => this.stopRecording();
+                }
+            }
+            
+            stopRecording() {
+                const button = document.querySelector('.recording-btn');
+                if (button) {
+                    button.textContent = '✅ 录制完成';
+                    button.classList.remove('recording');
+                    
+                    // 恢复按钮点击事件
+                    button.onclick = () => this.startRecording();
+                    
                     setTimeout(() => {
-                        button.textContent = '✅ 录制完成';
-                        button.classList.remove('recording');
-                        setTimeout(() => {
-                            this.step1_Complete();
-                        }, 1000);
-                    }, 3000);
+                        this.step1_Complete();
+                    }, 1000);
                 }
             }
             
